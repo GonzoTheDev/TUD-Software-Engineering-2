@@ -18,10 +18,11 @@ class EventSource {
     }
   
     public void scanSystemIn() {
-        Scanner scanner = new Scanner(System.in);
-        while (scanner.hasNextLine()) {
-            String line = scanner.nextLine();
-            notifyObservers(line);
+        try (Scanner scanner = new Scanner(System.in)) {
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine();
+                notifyObservers(line);
+            }
         }
     }
 }
