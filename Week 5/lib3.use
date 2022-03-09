@@ -21,6 +21,20 @@ class Book
     end
     pre copiesOnLoan: no_copies > 0
     post: no_onshelf = no_onshelf@pre + 1
+
+  statemachines
+        psm States
+        states                        
+            newTitle : initial
+            available       [no_onshelf > 0]
+            unavailable     [no_onshelf = 0]
+        transitions
+            newTitle ->  available  { create }
+            available -> unavailable { [no_onshelf = 1] borrow() }
+            available -> available { [no_onshelf > 1] borrow() }
+            available -> available { return() }
+            unavailable -> available { return() }
+        end
 end
 
 class Copy
@@ -34,6 +48,7 @@ class Copy
     end
     pre status: self.status = 'onShelf'
 
+    reserve()
 
     return()
     begin
@@ -44,16 +59,17 @@ class Copy
 
   statemachines
         psm States
-        states                        
+        states
             newTitle : initial
-            available       [status = 'onShelf']
-            unavailable     [status = 'onLoan']
+            onLoan
+            onShelf
+            onreserve
         transitions
-            newTitle ->  available  { create }
-            available -> unavailable { [status = 'onLoan'] borrow() }
-            available -> available { [status = 'onShelf'] borrow() }
-            available -> available { return() }
-            unavailable -> available { return() }
+            newTitle -> onShelf { create }
+            onShelf -> onLoan { borrow() }
+            onLoan -> onShelf { return() }
+            onShelf -> onreserve { reserve() }
+            onreserve -> onLoan { borrow() }
         end
     
 end    
