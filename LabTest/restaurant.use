@@ -1,0 +1,179 @@
+model BookingSys
+
+-- main control class
+
+class BookingSystem
+  attributes 
+    date : Date
+    status: Status
+  operations      
+    selectBooking(tno:Integer, hr:Integer, mn:Integer)
+    begin      
+        for r in self.current do
+            if (r.table.tno = tno and r.getTime() = hr*60+mn) then
+                insert(self,r) into Selected                
+            end
+        end
+    end
+    
+    unSelectBooking()
+    
+    recordArrival(hr:Integer, mn:Integer)
+    begin
+        declare t:Time;
+        t := new Time; 
+        t.setTime(hr, mn);
+        self.selected.setArrivalTime(t);
+        WriteLine('Customer has just been seated ');
+        self.selected.showDetails()
+    end
+    pre arrival: t < r;
+
+    
+      	
+    
+    statemachines
+        psm States
+        states                        
+            newBooking : initial
+            selected
+            notselected
+            recordArrival
+        transitions
+            newBooking ->  notselected  { create }
+            selected -> notselected { selectBooking() }
+            selected -> selected { selectBooking() }
+            selected -> recordArrival { recordArrival() }
+        end
+
+
+end
+
+
+class Booking
+  attributes
+    covers : Integer
+    date : Date
+    time : Time
+  operations
+    setArrivalTime(t:Time)
+    begin
+    end
+    
+    showDetails()
+    begin
+    end
+    
+    setTime(t : Time)
+    begin
+        self.time := t
+    end
+    
+    -- A query operation to retun the time of the booking in minutes
+    getTime() : Integer = time.getTime()
+end
+
+class WalkIn < Booking
+end
+
+class Reservation < Booking
+  attributes
+    arrivalTime : Time
+  operations
+    showDetails()
+    begin
+        Write('Selected reservation is by ');
+        WriteLine(self.customer.name)
+    end
+    
+    setArrivalTime(t:Time)
+    begin
+        self.arrivalTime := t
+    end
+    
+    setCustomer( c : Customer) begin
+        insert(c, self) into Makes        
+    end
+
+    cancel()
+    begin
+      	self.status = 'Cancelled';
+    end
+
+  statemachines
+        psm States
+        states                        
+            newReservation : initial
+            reserved
+            completed
+            cancelled
+        transitions
+            newReservation ->  reserved  { create }
+            reserved -> completed
+            reserved -> cancelled
+            reserved -> reserved
+        end
+end
+
+class Customer
+  attributes
+    name : String
+    phoneNumber : String
+end
+
+
+class Table 
+  attributes
+    tno : Integer
+    covers : Integer
+    
+end
+   
+
+   
+class Date
+  attributes
+    day : Integer
+    month : Integer
+    year : Integer
+end
+
+class Time
+  attributes
+    hour : Integer
+    min : Integer
+  operations
+    setTime(h:Integer, m:Integer)
+    begin
+        self.hour := h;
+        self.min := m
+    end 
+    
+    -- a query method to return the time since midnight in minutes
+    getTime() : Integer = self.hour*60 + self.min      
+end   
+
+association IsAt between 
+    Booking[*] role bookings
+    Table[1]
+end
+
+association Makes between
+    Customer[1]
+    Reservation[*] role reservations
+end
+
+association Contains between
+    BookingSystem[1] role bs
+    Booking[*] role current
+end
+
+association Selected between
+    BookingSystem[1] role bsys
+    Booking[0..1] role selected
+end
+
+
+constraints
+-- please exprees the contraint that no two bookings for a given
+-- table can overlap
